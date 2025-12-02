@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speaking Practice</title>
+    <style>
+        /* 스타일은 기존과 동일 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .pattern-selection { background: white; border-radius: 30px; padding: 60px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); max-width: 1000px; width: 100%; }
+        .pattern-selection h1 { font-size: 3em; color: #667eea; text-align: center; margin-bottom: 20px; }
+        .pattern-selection p { font-size: 1.3em; color: #666; text-align: center; margin-bottom: 40px; }
+        .pattern-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .pattern-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 15px; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .pattern-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
+        .pattern-card h3 { font-size: 1.5em; margin-bottom: 10px; }
+        .pattern-card p { font-size: 1em; color: rgba(255, 255, 255, 0.9); margin: 0; }
+        .slide-container { width: 90vw; max-width: 1200px; height: 80vh; background: white; border-radius: 30px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); position: relative; overflow: hidden; display: none; }
+        .slide-container.active { display: block; }
+        .slide { width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 60px; position: absolute; top: 0; left: 0; animation: fadeIn 0.5s ease-in-out; }
+        .slide.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .slide-header { position: absolute; top: 30px; left: 50px; font-size: 1.2em; color: #667eea; font-weight: 600; }
+        .slide-number { position: absolute; top: 30px; right: 50px; font-size: 1.2em; color: #999; }
+        .emoji-icon { font-size: 12em; margin: 20px 0; margin-bottom: 30px; text-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
+        .text-display { font-size: 2.5em; color: #666; margin: 40px 0; padding: 30px 60px; background: #f8f9fa; border-radius: 20px; border: 3px solid #dee2e6; word-break: keep-all; text-align: center;}
+        .answer { font-size: 2.5em; color: #28a745; font-weight: 700; margin-top: 20px; padding: 25px 50px; background: #d4edda; border-radius: 20px; border: 4px solid #28a745; display: none; animation: slideDown 0.5s ease-out; max-width: 90%; text-align: center;}
+        .answer.show { display: block; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        .controls { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; align-items: center; }
+        .btn { padding: 18px 35px; font-size: 1.15em; border: none; border-radius: 50px; cursor: pointer; font-weight: 600; transition: all 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 140px; }
+        .btn-show { background: #28a745; color: white; white-space: nowrap; }
+        .btn-show:hover { background: #218838; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4); }
+        .btn-next { background: #667eea; color: white; }
+        .btn-next:hover { background: #764ba2; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+        .btn-prev { background: #6c757d; color: white; }
+        .btn-prev:hover { background: #5a6268; transform: translateY(-2px); }
+        .btn-home { background: #dc3545; color: white; }
+        .btn-home:hover { background: #c82333; transform: translateY(-2px); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .progress-bar { position: absolute; top: 0; left: 0; height: 5px; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.3s; }
+        .instruction { position: absolute; bottom: 10px; font-size: 1em; color: #999; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="pattern-selection" id="patternSelection">
+        <img src="logo.jpg" alt="윤선생 로고" style="display: block; margin: 0 auto 20px; max-width: 200px;">
+        
+        <h1 id="bookTitle">🎤 Speaking Practice</h1>
+        <p>연습할 패턴을 선택하세요</p>
+        <div class="pattern-grid" id="patternGrid"></div>
+    </div>
+
+    <div class="slide-container" id="slideContainer">
+        <div class="progress-bar" id="progressBar"></div>
+        <div id="slidesContent"></div>
+        <div class="controls">
+            <button class="btn btn-home" onclick="goHome()"><span>🏠</span><span>홈</span></button>
+            <button class="btn btn-prev" onclick="prevSlide()"><span>◀</span><span>이전</span></button>
+            <button class="btn btn-show" onclick="showAnswer()" id="showBtn"><span>정답 보기</span></button>
+            <button class="btn btn-next" onclick="nextSlide()"><span>다음</span><span>▶</span></button>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+
+    <script>
+        const config = {
+            emojiPatterns: [4, 5, 6, 10, 11, 12, 13, 17, 18],
+            emojiMap: {
+                'Korea': '🇰🇷', 'France': '🇫🇷', 'China': '🇨🇳', 'America': '🇺🇸', 'Italy': '🇮🇹', 'Canada': '🇨🇦', 'Thailand': '🇹🇭', 'japan': '🇯🇵', 'India': '🇮🇳', 'Australia': '🇦🇺',
+                'young': '👶', 'cute': '😊', 'strong': '💪', 'smart': '🧠', 'baby': '👶', 'aunt': '👩', 'kind': '😇', 'tall': '🦒', 'short': '🧒',
+                'picture': '🖼️', 'owl': '🦉', 'room': '🏠', 'book': '📖', 'kitchen': '🍳', 'bathroom': '🚽', 'tree': '🌲', 'Sarah': '👧', 'Minho': '👦',
+                'table': '🪑', 'globe': '🌏', 'cake': '🎂', 'lion': '🦁', 'soft': '☁️', 'round': '⭕', 'scary': '😱', 'iguana': '🦎',
+                'sunny': '☀️', 'cloudy': '☁️', 'rainy': '🌧️', 'hot': '🔥', 'cold': '❄️', 'warm': '🌡️', 'cool': '🌬️', 'windy': '💨', 'clear': '🌤️', 'snowing': '🌨️',
+                'cup': '🥤', 'paper': '📄', 'neck': '🦒', 'crayons': '🖍️', 'question': '❓', 'hair': '💇', 'brother': '👦', 'sister': '👧', 'piano': '🎹', 'lesson': '📚', 'glue': '🧴',
+                'meat': '🍖', 'hamster': '🐹', 'winter': '❄️', 'swimming': '🏊', 'ice cream': '🍦', 'English': '📚', 'cherries': '🍒', 'tennis': '🎾', 'soccer': '⚽', 'fish': '🐟', 'eggs': '🥚',
+                'baseball': '⚾', 'golf': '⛳', 'cello': '🎻', 'guitar': '🎸', 'volleyball': '🏐', 'violin': '🎻', 'basketball': '🏀',
+                'sweater': '🧥', 'hat': '🎩', 'mittens': '🧤', 'boots': '👢', 'jacket': '🧥', 'pants': '👖', 'sunglasses': '🕶️', 'shoes': '👟', 'glasses': '👓', 'socks': '🧦'
+            }
+        };
+
+        // 2. 주소창에서 책 이름(?book=...)을 읽어옵니다.
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookName = urlParams.get('book') || "Level A Book 1"; // 기본값
+
+        // 제목에 책 이름을 표시해 줍니다.
+        document.getElementById('bookTitle').innerText = `🎤 ${bookName}`;
+
+        // 3. data.js에서 해당 책의 데이터를 가져옵니다.
+        let dbData = [];
+        if (typeof bookData !== 'undefined') {
+            dbData = bookData[bookName] || [];
+        }
+
+        if (dbData.length === 0) {
+            alert("⚠️ 선택하신 교재의 데이터가 아직 준비되지 않았습니다.");
+        }
+
+        let currentPattern = null;
+        let currentSlide = 0;
+        let slides = [];
+
+        // 패턴 이름도 data.js에서 불러온 commonPatternNames 사용
+        const patternNames = (typeof commonPatternNames !== 'undefined') ? commonPatternNames : {};
+
+        function init() { generatePatternCards(); }
+
+        function generatePatternCards() {
+            const grid = document.getElementById('patternGrid');
+            // 1~20번 패턴 카드를 만듭니다
+            for (let i = 1; i <= 20; i++) {
+                const card = document.createElement('div');
+                card.className = 'pattern-card';
+                
+                // 패턴 이름이 있으면 표시, 없으면 'Pattern X'라고만 표시
+                const pName = patternNames[i] || "";
+                
+                card.innerHTML = `<h3>Pattern ${i}</h3><p>${pName}</p>`;
+                card.onclick = () => selectPattern(i);
+                grid.appendChild(card);
+            }
+        }
+
+        function selectPattern(patternNum) {
+            currentPattern = patternNum;
+            loadPatternData(patternNum);
+        }
+
+        function loadPatternData(patternNum) {
+            // 현재 선택된 책의 데이터(dbData)에서 검색
+            const patternData = dbData.filter(row => {
+                return row['Pattern #'] === patternNum && row['Section'] === 'Speaking II';
+            });
+            if (patternData.length === 0) { alert(`Pattern ${patternNum}의 데이터가 없습니다.`); return; }
+            generateSlides(patternNum, patternData);
+        }
+
+        function generateSlides(patternNum, data) {
+            const container = document.getElementById('slidesContent');
+            container.innerHTML = '';
+            const useEmoji = config.emojiPatterns.includes(patternNum);
+            container.appendChild(createTitleSlide(patternNum));
+            data.forEach((item, index) => {
+                container.appendChild(createQuestionSlide(patternNum, item, index, data.length, useEmoji));
+            });
+            container.appendChild(createEndSlide(patternNum));
+            document.getElementById('patternSelection').style.display = 'none';
+            document.getElementById('slideContainer').classList.add('active');
+            slides = document.querySelectorAll('.slide');
+            currentSlide = 0;
+            updateSlide();
+        }
+
+        function createTitleSlide(patternNum) {
+            const slide = document.createElement('div');
+            slide.className = 'slide';
+            const pName = patternNames[patternNum] || "";
+            slide.innerHTML = `<div class="question" style="font-size: 4em; color: #667eea;">Pattern ${patternNum}: ${pName}</div><div style="font-size: 2em; color: #666; margin-top: 20px;">말하기 연습 슬라이드</div><div style="margin-top: 60px; font-size: 1.5em; color: #999;">▶ 다음을 눌러 시작하세요</div>`;
+            return slide;
+        }
+
+        function createQuestionSlide(patternNum, item, index, total, useEmoji) {
+            const slide = document.createElement('div');
+            slide.className = 'slide';
+            const englishQuestion = item['English/Answer'] || item['Korean/Question'];
+            const koreanHint = item['Korean/Question'];
+            const pName = patternNames[patternNum] || "";
+            
+            let visualContent = '';
+            if (useEmoji) {
+                const emoji = extractEmoji(englishQuestion, koreanHint);
+                if (emoji) visualContent = `<div class="emoji-icon">${emoji}</div>`;
+                else visualContent = `<div class="text-display">${koreanHint}</div>`;
+            } else {
+                visualContent = `<div class="text-display">${koreanHint}</div>`;
+            }
+            slide.innerHTML = `<div class="slide-header">Pattern ${patternNum}: ${pName}</div><div class="slide-number">${index + 1} / ${total}</div>${visualContent}<div class="answer" id="answer-${index}">${englishQuestion}</div><div class="instruction">학생이 대답한 후 "정답 보기"를 클릭하세요</div>`;
+            return slide;
+        }
+
+        function createEndSlide(patternNum) {
+            const slide = document.createElement('div');
+            slide.className = 'slide';
+            slide.innerHTML = `<div class="question" style="font-size: 4em; color: #28a745;">수고했습니다! 🎉</div><div style="font-size: 2em; color: #666; margin-top: 40px;">Pattern ${patternNum} 연습 완료</div>`;
+            return slide;
+        }
+
+        function extractEmoji(english, korean) {
+            const text = (english + ' ' + korean).toLowerCase();
+            for (const [keyword, emoji] of Object.entries(config.emojiMap)) {
+                if (text.includes(keyword.toLowerCase())) return emoji;
+            }
+            return null;
+        }
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active');
+                if (index === currentSlide) slide.classList.add('active');
+            });
+            const progress = (currentSlide / (slides.length - 1)) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            const showBtn = document.getElementById('showBtn');
+            if (currentSlide > 0 && currentSlide < slides.length - 1) {
+                showBtn.style.display = 'inline-flex';
+                const answerEl = document.getElementById(`answer-${currentSlide - 1}`);
+                if (answerEl) answerEl.classList.remove('show');
+            } else {
+                showBtn.style.display = 'none';
+            }
+        }
+
+        function showAnswer() {
+            const answerEl = document.getElementById(`answer-${currentSlide - 1}`);
+            if (answerEl) answerEl.classList.add('show');
+        }
+
+        function nextSlide() { if (currentSlide < slides.length - 1) { currentSlide++; updateSlide(); } }
+        function prevSlide() { if (currentSlide > 0) { currentSlide--; updateSlide(); } }
+        
+        // [수정됨] 홈 버튼 누르면, '책 목록'(index.html)이 아니라 '패턴 목록'(이 페이지 처음)으로 돌아감
+        // 만약 아예 '책 선택 화면'으로 가고 싶다면 window.location.href = 'index.html' 로 바꾸세요.
+        function goHome() { 
+            document.getElementById('slideContainer').classList.remove('active'); 
+            document.getElementById('patternSelection').style.display = 'block'; 
+            currentSlide = 0; 
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('slideContainer').classList.contains('active')) {
+                if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+                else if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+                else if (e.key === 'Enter') { e.preventDefault(); showAnswer(); }
+                else if (e.key === 'Escape') { goHome(); }
+            }
+        });
+
+        window.onload = init;
+    </script>
+</body>
+</html>
